@@ -129,7 +129,7 @@
 
     <canvas id="gameCanvas" width="1600" height="900"></canvas>
 
-    <!-- Menu de Démarrage -->
+
     <div id="setupMenu">
         <div class="menu-box">
             <h1>StopTobacco Run</h1>
@@ -138,7 +138,7 @@
         </div>
     </div>
 
-    <!-- Menu Game Over -->
+  
     <div id="gameOverMenu" class="hidden">
         <div class="menu-box">
             <h1>GAME OVER</h1>
@@ -149,7 +149,7 @@
 </div>
 
 <script>
-    // LOGIQUE DE REDIMENSIONNEMENT RESPONSIVE
+   
     function resizeGame() {
         const wrapper = document.getElementById('gameWrapper');
         const scaleX = window.innerWidth / 1600;
@@ -163,7 +163,7 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     
-    // UI Elements
+ 
     const healthDisplay = document.getElementById('healthDisplay');
     const scoreDisplay = document.getElementById('scoreDisplay');
     const setupMenu = document.getElementById('setupMenu');
@@ -173,9 +173,7 @@
     const finalScore = document.getElementById('finalScore');
     const playerSprite = document.getElementById('playerSprite');
 
-    // ==========================================
-    // CHARGEMENT DES FICHIERS ET AUDIOS
-    // ==========================================
+
     const cigImage = new Image();
     cigImage.src = 'tabac.png';
 
@@ -185,19 +183,17 @@
     const bgImage = new Image();
     bgImage.src = 'MAdiba.png';
 
-    // Initialisation des objets Audio purs et simples avec gestion du volume
     const bgMusic = new Audio('jeangrey.wav'); 
     bgMusic.loop = true; 
-    bgMusic.volume = 0.3; // 30% du volume maximal
+    bgMusic.volume = 0.3; 
     
     const hitSound = new Audio('tchie.mp3'); 
-    hitSound.volume = 0.7; // 70% du volume maximal
+    hitSound.volume = 0.7; 
     
     const healSound = new Audio('heal.mp3');
-    healSound.volume = 0.7; // 70% du volume maximal
-    // ==========================================
+    healSound.volume = 0.7; 
 
-    // Variables de jeu
+    
     let isPlaying = false;
     let frameCount = 0;
     let score = 0;
