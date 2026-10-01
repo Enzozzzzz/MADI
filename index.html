@@ -341,7 +341,7 @@
             let yPosCig = groundY - cigH;
             let yPosPatch = groundY - patchH;
             
-            if (rand < 0.15) items.push(new Entity(canvas.width, yPosPatch, patchW, patchH, 'patch'));
+            if (rand < 0.05) items.push(new Entity(canvas.width, yPosPatch, patchW, patchH, 'patch'));
             else obstacles.push(new Entity(canvas.width, yPosCig, cigW, cigH, 'cig'));
         }
     }
