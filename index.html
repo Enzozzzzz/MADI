@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>StopTobacco Run</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #0d0d1a;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            touch-action: none;
+        }
+        
+        #gameWrapper {
+            position: relative;
+            width: 1600px;
+            height: 900px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #1f2937;
+            transform-origin: center center;
+        }
+        
+        canvas {
+            display: block;
+            background-color: #1a1a2e;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 32px;
+            font-weight: 900;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.9);
+            pointer-events: none;
+            z-index: 20;
+            letter-spacing: 1px;
+        }
+        .hearts { color: #ff3366; }
+        
+        #setupMenu, #gameOverMenu {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(13, 13, 26, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+        }
+        .menu-box {
+            background: rgba(22, 33, 62, 0.9);
+            padding: 40px;
+            border-radius: 20px;
+            border: 2px solid #e94560;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(233, 69, 96, 0.3);
+            max-width: 500px;
+            width: 90%;
+        }
+        .menu-box h1 {
+            color: #e94560;
+            margin-top: 0;
+            font-size: 42px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .menu-box p {
+            font-size: 20px;
+            color: #a2a8d3;
+            margin-bottom: 30px;
+        }
+        button {
+            background: linear-gradient(135deg, #e94560, #ff5778);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-size: 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            font-weight: bold;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+        }
+        button:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 6px 20px rgba(233, 69, 96, 0.6);
+        }
+        .hidden { display: none !important; }
+
+        #playerSprite {
+            position: absolute;
+            width: 200px;
+            height: 380px;
+            pointer-events: none;
+            display: none;
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+
+<div id="gameWrapper">
+    <div id="ui">
+        <div class="hearts" id="healthDisplay">❤️❤️❤️</div>
+        <div id="scoreDisplay" style="color: #4ade80;">SCORE: 0</div>
+    </div>
+    
+    <img id="playerSprite" src="anime.gif" alt="Joueur">
+
+    <canvas id="gameCanvas" width="1600" height="900"></canvas>
+
+    <!-- Menu de Démarrage -->
+    <div id="setupMenu">
+        <div class="menu-box">
+            <h1>StopTobacco Run</h1>
+            <p>Esquive le tabac, récupère les patchs !<br><br><span style="font-size:16px; color:#fff;">Appuie sur l'écran (mobile) ou Espace (PC) pour sauter.</span></p>
+            <button id="startBtn">JOUER</button>
+        </div>
+    </div>
+
+    <!-- Menu Game Over -->
+    <div id="gameOverMenu" class="hidden">
+        <div class="menu-box">
+            <h1>GAME OVER</h1>
+            <p id="finalScore" style="font-size: 32px; color: white; font-weight: bold;">Score: 0</p>
+            <button id="restartBtn">Recommencer</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // LOGIQUE DE REDIMENSIONNEMENT RESPONSIVE
+    function resizeGame() {
+        const wrapper = document.getElementById('gameWrapper');
+        const scaleX = window.innerWidth / 1600;
+        const scaleY = window.innerHeight / 900;
+        const scale = Math.min(scaleX, scaleY) * 0.95; 
+        wrapper.style.transform = `scale(${scale})`;
+    }
+    window.addEventListener('resize', resizeGame);
+    resizeGame(); 
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Elements
+    const healthDisplay = document.getElementById('healthDisplay');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const setupMenu = document.getElementById('setupMenu');
+    const gameOverMenu = document.getElementById('gameOverMenu');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const finalScore = document.getElementById('finalScore');
+    const playerSprite = document.getElementById('playerSprite');
+
+    // ==========================================
+    // CHARGEMENT DES FICHIERS ET AUDIOS
+    // ==========================================
+    const cigImage = new Image();
+    cigImage.src = 'tabac.png';
+
+    const patchImage = new Image();
+    patchImage.src = 'patch.png';
+
+    const bgImage = new Image();
+    bgImage.src = 'MAdiba.png';
+
+    // Initialisation des objets Audio purs et simples avec gestion du volume
+    const bgMusic = new Audio('jeangrey.wav'); 
+    bgMusic.loop = true; 
+    bgMusic.volume = 0.3; // 30% du volume maximal
+    
+    const hitSound = new Audio('tchie.mp3'); 
+    hitSound.volume = 0.7; // 70% du volume maximal
+    
+    const healSound = new Audio('heal.mp3');
+    healSound.volume = 0.7; // 70% du volume maximal
+    // ==========================================
+
+    // Variables de jeu
+    let isPlaying = false;
+    let frameCount = 0;
+    let score = 0;
+    let baseSpeed = 10;
+    let currentSpeed = 10;
+    let maxSpeed = 24;
+
+    const gravity = 1.2;
+    let obstacles = [];
+    let items = [];
+    let particles = [];
+
+    const groundHeight = 80;
+    const groundY = canvas.height - groundHeight;
+
+    const player = {
+        x: 100,
+        y: 400,
+        width: 200,
+        height: 380,
+        dy: 0,
+        jumpForce: -32,
+        grounded: false,
+        doubleJump: false,
+        health: 3,
+        
+        update() {
+            this.dy += gravity;
+            this.y += this.dy;
+            
+            if (this.y + this.height >= groundY) {
+                this.y = groundY - this.height;
+                this.dy = 0;
+                this.grounded = true;
+                this.doubleJump = true;
+            } else {
+                this.grounded = false;
+            }
+
+            playerSprite.style.left = this.x + 'px';
+            playerSprite.style.top = this.y + 'px';
+        },
+        
+        jump() {
+            if (this.grounded) {
+                this.dy = this.jumpForce;
+                this.grounded = false;
+                createParticles(this.x + this.width/2, this.y + this.height, '#ffffff');
+            } else if (this.doubleJump) {
+                this.dy = this.jumpForce * 0.8;
+                this.doubleJump = false;
+                createParticles(this.x + this.width/2, this.y + this.height, '#e94560');
+            }
+        }
+    };
+
+    function updateHealthUI() {
+        healthDisplay.innerText = '❤️'.repeat(player.health);
+    }
+
+    class Entity {
+        constructor(x, y, w, h, type) {
+            this.x = x;
+            this.y = y;
+            this.w = w;
+            this.h = h;
+            this.type = type;
+            this.passed = false;
+        }
+
+        draw() {
+            if (this.type === 'cig') {
+                ctx.drawImage(cigImage, this.x, this.y, this.w, this.h);
+            } else if (this.type === 'patch') {
+                ctx.drawImage(patchImage, this.x, this.y, this.w, this.h);
+            }
+        }
+
+        update() {
+            this.x -= currentSpeed;
+        }
+    }
+
+    function createParticles(x, y, color) {
+        for(let i=0; i<15; i++) {
+            particles.push({
+                x: x, y: y,
+                vx: (Math.random() - 0.5) * 10,
+                vy: (Math.random() - 0.5) * 10,
+                life: 1, color: color
+            });
+        }
+    }
+
+    function spawnEntities() {
+        if (frameCount % Math.max(50, 100 - Math.floor(score/10)) === 0) {
+            let rand = Math.random();
+            const cigW = 100;
+            const cigH = 140;
+            const patchW = 100;
+            const patchH = 100;
+
+            let yPosCig = groundY - cigH;
+            let yPosPatch = groundY - patchH;
+            
+            if (rand < 0.15) {
+                items.push(new Entity(canvas.width, yPosPatch, patchW, patchH, 'patch'));
+            } else {
+                obstacles.push(new Entity(canvas.width, yPosCig, cigW, cigH, 'cig'));
+            }
+        }
+    }
+
+    function checkCollision(rect1, rect2) {
+        const paddingX = 20;
+        const paddingY = 20;
+
+        return rect1.x + paddingX < rect2.x + rect2.w &&
+               rect1.x + rect1.width - paddingX > rect2.x &&
+               rect1.y + paddingY < rect2.y + rect2.h &&
+               rect1.height + rect1.y - paddingY > rect2.y;
+    }
+
+    function drawEnvironment() {
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (bgImage.complete) {
+            const tagWidth = 800;
+            const tagHeight = 400;
+            const tagX = (canvas.width - tagWidth) / 2;
+            const tagY = (canvas.height - tagHeight) / 2 - 100;
+
+            ctx.globalAlpha = 0.4;
+            ctx.drawImage(bgImage, tagX, tagY, tagWidth, tagHeight);
+            ctx.globalAlpha = 1.0;
+        }
+
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, canvas.height - 300, canvas.width, 300 - groundHeight);
+
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(0, groundY, canvas.width, groundHeight);
+        
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(0, groundY);
+        ctx.lineTo(canvas.width, groundY);
+        ctx.stroke();
+    }
+
+    function update() {
+        if (!isPlaying) return;
+
+        frameCount++;
+        currentSpeed = Math.min(baseSpeed + (score / 150), maxSpeed);
+
+        drawEnvironment();
+
+        player.update();
+
+        spawnEntities();
+
+        particles.forEach((p, index) => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 0.03;
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            if (p.life <= 0) particles.splice(index, 1);
+        });
+
+        items.forEach((item, index) => {
+            item.update();
+            item.draw();
+
+            if (checkCollision(player, item)) {
+                if (player.health < 3) {
+                    player.health++;
+                    updateHealthUI();
+                    
+                    healSound.currentTime = 0;
+                    healSound.play().catch(e => console.log(e));
+                }
+                createParticles(item.x + item.w/2, item.y + item.h/2, '#4ade80');
+                items.splice(index, 1);
+            } else if (item.x + item.w < 0) {
+                items.splice(index, 1);
+            }
+        });
+
+        obstacles.forEach((obs, index) => {
+            obs.update();
+            obs.draw();
+
+            if (checkCollision(player, obs)) {
+                player.health--;
+                updateHealthUI();
+                createParticles(player.x + player.width/2, player.y + player.height/2, '#ef4444');
+                obstacles.splice(index, 1);
+                
+                hitSound.currentTime = 0;
+                hitSound.play().catch(e => console.log(e));
+                
+                if (player.health <= 0) {
+                    endGame();
+                }
+            } else if (obs.x + obs.w < 0) {
+                obstacles.splice(index, 1);
+            } else if (!obs.passed && obs.x + obs.w < player.x) {
+                score += 10;
+                obs.passed = true;
+                scoreDisplay.innerText = `SCORE: ${score}`;
+            }
+        });
+
+        if (isPlaying) {
+            requestAnimationFrame(update);
+        }
+    }
+
+    function initGame() {
+        setupMenu.classList.add('hidden');
+        gameOverMenu.classList.add('hidden');
+        playerSprite.style.display = 'block';
+        obstacles = [];
+        items = [];
+        particles = [];
+        score = 0;
+        currentSpeed = baseSpeed;
+        frameCount = 0;
+        player.y = 400;
+        player.dy = 0;
+        player.health = 3;
+        updateHealthUI();
+        scoreDisplay.innerText = `SCORE: 0`;
+        isPlaying = true;
+        
+        bgMusic.currentTime = 0;
+        bgMusic.play().then(() => {
+            console.log("Musique lancée !");
+        }).catch(e => {
+            console.error("Erreur musique:", e);
+        });
+
+        update();
+    }
+
+    function endGame() {
+        isPlaying = false;
+        playerSprite.style.display = 'none';
+        finalScore.innerText = `Score Final: ${score}`;
+        gameOverMenu.classList.remove('hidden');
+        drawEnvironment();
+        
+        bgMusic.pause();
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if ((e.code === 'Space' || e.code === 'ArrowUp') && isPlaying) {
+            e.preventDefault();
+            player.jump();
+        }
+    });
+
+    window.addEventListener('touchstart', (e) => {
+        if (isPlaying && e.target.tagName !== 'BUTTON') {
+            e.preventDefault();
+            player.jump();
+        }
+    }, {passive: false});
+
+    startBtn.addEventListener('click', initGame);
+    restartBtn.addEventListener('click', initGame);
+
+    bgImage.onload = drawEnvironment;
+    drawEnvironment();
+</script>
+</body>
+</html>
